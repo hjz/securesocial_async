@@ -16,16 +16,18 @@
  */
 package securesocial.core.providers
 
+import com.typesafe.plugin._
+import org.joda.time.DateTime
+import play.api.Application
+import play.api.Play.current
 import play.api.data.Form
 import play.api.data.Forms._
-import securesocial.core._
+import play.api.libs.concurrent.Execution.Implicits._
 import play.api.mvc.{PlainResult, Results, Result, Request}
-import utils.PasswordHasher
-import play.api.{Play, Application}
-import Play.current
-import com.typesafe.plugin._
+import scala.concurrent.Future
 import securesocial.controllers.TemplatesPlugin
-import org.joda.time.DateTime
+import securesocial.core._
+import utils.PasswordHasher
 
 /**
  * A username password provider
@@ -58,10 +60,10 @@ class UsernamePasswordProvider(application: Application) extends IdentityProvide
     Results.BadRequest(use[TemplatesPlugin].getLoginPage(request, f, msg))
   }
 
-  def fillProfile(user: SocialUser) = {
+  def fillProfile(user: SocialUser): Future[SocialUser] = {
     // nothing to do for this provider, the user should already have everything because it
     // was loaded from the backing store
-    user
+    Future(user)
   }
 }
 

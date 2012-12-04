@@ -16,16 +16,13 @@
  */
 package securesocial.core.providers
 
-import play.api.{Logger, Application}
 import play.api.libs.concurrent.Execution.Implicits._
 import play.api.libs.ws.{Response, WS}
+import play.api.{Logger, Application}
 import scala.concurrent._
-import scala.concurrent.duration._
-import securesocial.core._
-import securesocial.core.SocialUser
-import securesocial.core.UserId
-import securesocial.core.providers.GitHubProvider._
 import scala.util.{Success, Failure}
+import securesocial.core._
+import securesocial.core.providers.GitHubProvider._
 
 /**
  * A GitHub provider
@@ -51,7 +48,7 @@ class GitHubProvider(application: Application) extends OAuth2Provider(applicatio
    * @param user The user object to be populated
    * @return A copy of the user object with the new values set
    */
-  def fillProfile(user: SocialUser): SocialUser = {
+  def fillProfile(user: SocialUser): Future[SocialUser] = {
     val call = WS.url(GetAuthenticatedUser.format(user.oAuth2Info.get.accessToken)).get()
     val socialUserPromise = promise[SocialUser]
     call.onComplete {
@@ -80,7 +77,7 @@ class GitHubProvider(application: Application) extends OAuth2Provider(applicatio
             }
         }
     }
-    Await.result(socialUserPromise.future, 10 seconds)
+    socialUserPromise.future
   }
 
 }

@@ -21,7 +21,6 @@ import play.api.libs.oauth.{RequestToken, OAuthCalculator}
 import play.api.libs.ws.WS
 import play.api.{Application, Logger}
 import scala.concurrent._
-import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 import securesocial.core._
 import securesocial.core.providers.TwitterProvider._
@@ -34,7 +33,7 @@ class TwitterProvider(application: Application) extends OAuth1Provider(applicati
 
   override def providerId = TwitterProvider.Twitter
 
-  override def fillProfile(user: SocialUser): SocialUser = {
+  override def fillProfile(user: SocialUser): Future[SocialUser] = {
     val oauthInfo = user.oAuth1Info.get
     val call = WS.url(TwitterProvider.VerifyCredentials).sign(
       OAuthCalculator(oauthInfo.serviceInfo.key,
@@ -53,7 +52,7 @@ class TwitterProvider(application: Application) extends OAuth1Provider(applicati
           user.copy(id = UserId(id.toString, providerId), fullName = name, avatarUrl = profileImage)
         }
     }
-    Await.result(socialUserPromise.future, 10 seconds)
+    socialUserPromise.future
   }
 }
 

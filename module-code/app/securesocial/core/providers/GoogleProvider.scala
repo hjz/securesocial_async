@@ -16,12 +16,11 @@
  */
 package securesocial.core.providers
 
-import play.api.{Application, Logger}
 import play.api.libs.concurrent.Execution.Implicits._
 import play.api.libs.json.JsObject
 import play.api.libs.ws.WS
+import play.api.{Application, Logger}
 import scala.concurrent._
-import scala.concurrent.duration._
 import scala.util.{Success, Failure}
 import securesocial.core._
 import securesocial.core.providers.GoogleProvider._
@@ -34,7 +33,7 @@ class GoogleProvider(application: Application) extends OAuth2Provider(applicatio
 
   def providerId = GoogleProvider.Google
 
-  def fillProfile(user: SocialUser): SocialUser = {
+  def fillProfile(user: SocialUser): Future[SocialUser] = {
     val accessToken = user.oAuth2Info.get.accessToken
     val call = WS.url(UserInfoApi + accessToken).get()
     val socialUserPromise = promise[SocialUser]
@@ -70,7 +69,7 @@ class GoogleProvider(application: Application) extends OAuth2Provider(applicatio
             }
         }
     }
-    Await.result(socialUserPromise.future, 10 seconds)
+    socialUserPromise.future
   }
 
 }

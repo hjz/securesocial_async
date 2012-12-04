@@ -16,12 +16,11 @@
  */
 package securesocial.core.providers
 
-import play.api.{Application, Logger}
 import play.api.libs.concurrent.Execution.Implicits._
 import play.api.libs.oauth.{RequestToken, OAuthCalculator}
 import play.api.libs.ws.WS
+import play.api.{Application, Logger}
 import scala.concurrent._
-import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 import securesocial.core._
 import securesocial.core.providers.LinkedInProvider._
@@ -34,7 +33,7 @@ class LinkedInProvider(application: Application) extends OAuth1Provider(applicat
 
   override def providerId = LinkedInProvider.LinkedIn
 
-  override def fillProfile(user: SocialUser): SocialUser = {
+  override def fillProfile(user: SocialUser): Future[SocialUser] = {
     val oauthInfo = user.oAuth1Info.get
     val call = WS.url(LinkedInProvider.Api).sign(OAuthCalculator(oauthInfo.serviceInfo.key,
       RequestToken(oauthInfo.token, oauthInfo.secret))).get()
@@ -74,7 +73,7 @@ class LinkedInProvider(application: Application) extends OAuth1Provider(applicat
           }
         }
     }
-    Await.result(socialUserPromise.future, 10 seconds)
+    socialUserPromise.future
   }
 
 }

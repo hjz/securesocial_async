@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,9 +16,11 @@
  */
 package securesocial.core
 
-import providers.utils.RoutesHelper
+import play.api.libs.concurrent.Execution.Implicits._
 import play.api.mvc.{Request, Result}
-import play.api.{Play, Application, Logger, Plugin}
+import play.api.{Application, Logger, Plugin}
+import providers.utils.RoutesHelper
+import scala.concurrent.Future
 
 /**
  * Base class for all Identity Providers.  All providers are plugins and are loaded
@@ -73,14 +75,16 @@ abstract class IdentityProvider(application: Application) extends Plugin {
    * @tparam A
    * @return
    */
-  def authenticate[A]()(implicit request: Request[A]):Either[Result, SocialUser] = {
+  def authenticate[A]()(implicit request: Request[A]): Either[Result, Future[SocialUser]] = {
     doAuth().fold(
       result => Left(result),
-      u =>
-      {
-        val user = fillProfile(u)
-        UserService.save(user)
-        Right(user)
+      u => {
+        Right({
+          fillProfile(u).map { user =>
+            UserService.save(user)
+            user
+          }
+        })
       }
     )
   }
@@ -90,7 +94,7 @@ abstract class IdentityProvider(application: Application) extends Plugin {
    * to the provider url.
    * @return
    */
-  def authenticationUrl:String = RoutesHelper.authenticate(providerId).url
+  def authenticationUrl: String = RoutesHelper.authenticate(providerId).url
 
   /**
    * The property key used for all the provider properties.
@@ -106,7 +110,7 @@ abstract class IdentityProvider(application: Application) extends Plugin {
    */
   def loadProperty(property: String): Option[String] = {
     val result = application.configuration.getString(propertyKey + property)
-    if ( !result.isDefined ) {
+    if (!result.isDefined) {
       Logger.error("[securesocial] Missing property " + property + " for provider " + providerId)
     }
     result
@@ -121,7 +125,7 @@ abstract class IdentityProvider(application: Application) extends Plugin {
    * @tparam A
    * @return Either a Result or a User
    */
-  def doAuth[A]()(implicit request: Request[A]):Either[Result, SocialUser]
+  def doAuth[A]()(implicit request: Request[A]): Either[Result, SocialUser]
 
   /**
    * Subclasses need to implement this method to populate the User object with profile
@@ -130,7 +134,7 @@ abstract class IdentityProvider(application: Application) extends Plugin {
    * @param user The user object to be populated
    * @return A copy of the user object with the new values set
    */
-  def fillProfile(user: SocialUser):SocialUser
+  def fillProfile(user: SocialUser): Future[SocialUser]
 
   protected def throwMissingPropertiesException() {
     val msg = "Missing properties for provider '%s'. Verify your configuration file is properly set.".format(providerId)
@@ -140,10 +144,12 @@ abstract class IdentityProvider(application: Application) extends Plugin {
 }
 
 object IdentityProvider {
+
+  import play.api.Play.current
+
   val SessionId = "securesocial.id"
 
   val sslEnabled: Boolean = {
-    import Play.current
     current.configuration.getBoolean("securesocial.ssl").getOrElse(false)
   }
 }

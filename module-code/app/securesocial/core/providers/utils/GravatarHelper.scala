@@ -17,19 +17,27 @@
 package securesocial.core.providers.utils
 
 import java.security.MessageDigest
-import play.api.libs.ws.WS
+import play.api.libs.ws.{Response, WS}
+import play.api.libs.concurrent.Execution.Implicits._
+import scala.concurrent._
+import scala.util.Success
 
 object GravatarHelper {
   val GravatarUrl = "http://www.gravatar.com/avatar/%s?d=404"
   val Md5 = "MD5"
 
   def avatarFor(email: String): Option[String] = {
-    hash(email).map( hash => {
+    import scala.concurrent.duration._
+
+    hash(email).map(hash => {
       val url = GravatarUrl.format(hash)
-      WS.url(url).get().await(10000).fold(
-        onError => None,
-        onSuccess => if (onSuccess.status == 200) Some(url) else None
-      )
+      val f: Future[Response] = WS.url(url).get()
+      val p = promise[Option[String]]
+      f.onComplete {
+        case Success(response) if (response.status == 200) => p.success(Some(url))
+        case _ => p.success(None)
+      }
+      Await.result(p.future, 10 seconds)
     }).getOrElse(None)
   }
 

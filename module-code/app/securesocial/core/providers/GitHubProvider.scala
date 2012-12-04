@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,28 +16,22 @@
  */
 package securesocial.core.providers
 
-import securesocial.core._
 import play.api.{Logger, Application}
+import play.api.libs.concurrent.Execution.Implicits._
 import play.api.libs.ws.{Response, WS}
-import securesocial.core.UserId
+import scala.concurrent._
+import scala.concurrent.duration._
+import securesocial.core._
 import securesocial.core.SocialUser
-import play.api.libs.ws.Response
-import securesocial.core.AuthenticationException
-import scala.Some
+import securesocial.core.UserId
+import securesocial.core.providers.GitHubProvider._
+import scala.util.{Success, Failure}
 
 /**
  * A GitHub provider
  *
  */
 class GitHubProvider(application: Application) extends OAuth2Provider(application) {
-  val GetAuthenticatedUser = "https://api.github.com/user?access_token=%s"
-  val AccessToken = "access_token"
-  val TokenType = "token_type"
-  val Message = "message"
-  val Id = "id"
-  val Name = "name"
-  val AvatarUrl = "avatar_url"
-  val Email = "email"
 
   def providerId = GitHubProvider.GitHub
 
@@ -58,38 +52,47 @@ class GitHubProvider(application: Application) extends OAuth2Provider(applicatio
    * @return A copy of the user object with the new values set
    */
   def fillProfile(user: SocialUser): SocialUser = {
-    val promise = WS.url(GetAuthenticatedUser.format(user.oAuth2Info.get.accessToken)).get()
-    promise.await(10000).fold(
-      error => {
-        Logger.error( "Error retrieving profile information from github", error)
+    val call = WS.url(GetAuthenticatedUser.format(user.oAuth2Info.get.accessToken)).get()
+    val socialUserPromise = promise[SocialUser]
+    call.onComplete {
+      case Failure(t) =>
+        Logger.error("Error retrieving profile information from github", t)
         throw new AuthenticationException()
-      },
-      response => {
+      case Success(response) =>
         val me = response.json
         (me \ Message).asOpt[String] match {
           case Some(msg) => {
             Logger.error("Error retrieving profile information from GitHub. Message = %s".format(msg))
             throw new AuthenticationException()
           }
-          case _ => {
-            val id = (me \ Id).as[Int]
-            val displayName = (me \ Name).asOpt[String].getOrElse("")
-            val avatarUrl = (me \ AvatarUrl).asOpt[String]
-            val email = (me \ Email).asOpt[String].filter( !_.isEmpty )
-            user.copy(
-              id = UserId(id.toString, providerId),
-              fullName = displayName,
-              avatarUrl = avatarUrl,
-              email = email
-            )
-          }
+          case _ =>
+            socialUserPromise.success {
+              val id = (me \ Id).as[Int]
+              val displayName = (me \ Name).asOpt[String].getOrElse("")
+              val avatarUrl = (me \ AvatarUrl).asOpt[String]
+              val email = (me \ Email).asOpt[String].filter(!_.isEmpty)
+              user.copy(
+                id = UserId(id.toString, providerId),
+                fullName = displayName,
+                avatarUrl = avatarUrl,
+                email = email
+              )
+            }
         }
-
-      }
-    )
+    }
+    Await.result(socialUserPromise.future, 10 seconds)
   }
+
 }
 
 object GitHubProvider {
   val GitHub = "github"
+  val GetAuthenticatedUser = "https://api.github.com/user?access_token=%s"
+  val AccessToken = "access_token"
+  val TokenType = "token_type"
+  val Message = "message"
+  val Id = "id"
+  val Name = "name"
+  val AvatarUrl = "avatar_url"
+  val Email = "email"
 }

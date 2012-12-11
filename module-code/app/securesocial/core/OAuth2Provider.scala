@@ -86,7 +86,7 @@ abstract class OAuth2Provider(application: Application) extends IdentityProvider
     )
   }
 
-  def doAuth[A]()(implicit request: Request[A]): Either[Result, SocialUser] = {
+  def doAuth[A]()(implicit request: Request[A]): Future[Either[Result, SocialUser]] = {
     request.queryString.get(OAuth2Constants.Error).flatMap(_.headOption).map(error => {
       error match {
         case OAuth2Constants.AccessDenied => throw new AccessDeniedException()
@@ -116,7 +116,7 @@ abstract class OAuth2Provider(application: Application) extends IdentityProvider
           Logger.debug("user = " + user)
         }
         user match {
-          case Some(u) => Right(u)
+          case Some(u) => Future(Right(u))
           case _ => throw new AuthenticationException()
         }
       case None =>
@@ -138,7 +138,7 @@ abstract class OAuth2Provider(application: Application) extends IdentityProvider
           Logger.debug("authorizationUrl = " + settings.authorizationUrl)
           Logger.debug("Redirecting to : [" + url + "]")
         }
-        Left(Results.Redirect(url).withSession(request.session +(IdentityProvider.SessionId, sessionId)))
+        Future(Left(Results.Redirect(url).withSession(request.session +(IdentityProvider.SessionId, sessionId))))
     }
   }
 }

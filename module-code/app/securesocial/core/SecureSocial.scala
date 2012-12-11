@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,8 +20,9 @@ import play.api.mvc._
 import providers.utils.RoutesHelper
 import play.api.i18n.Messages
 import play.api.Logger
+import play.api.libs.concurrent.Execution.Implicits._
 import play.api.libs.json.Json
-
+import scala.concurrent.Future
 
 
 /**
@@ -34,9 +35,9 @@ case class SecuredRequest[A](user: SocialUser, request: Request[A]) extends Wrap
  * if available.
  *
  * object MyController extends SecureSocial {
- *    def protectedAction = SecuredAction() { implicit request =>
- *      Ok("Hello %s".format(request.user.displayName))
- *    }
+ * def protectedAction = SecuredAction() { implicit request =>
+ * Ok("Hello %s".format(request.user.displayName))
+ * }
  */
 trait SecureSocial extends Controller {
   /**
@@ -46,13 +47,13 @@ trait SecureSocial extends Controller {
    * @return
    */
   private def ajaxCallNotAuthenticated[A](implicit request: Request[A]): Result = {
-    Forbidden(Json.toJson(Map("error"->"Credentials required"))).withSession {
+    Forbidden(Json.toJson(Map("error" -> "Credentials required"))).withSession {
       session - SecureSocial.UserKey - SecureSocial.ProviderKey
     }.as(JSON)
   }
 
   private def ajaxCallNotAuthorized[A](implicit request: Request[A]): Result = {
-    Forbidden( Json.toJson(Map("error" -> "Not authorized"))).as(JSON)
+    Forbidden(Json.toJson(Map("error" -> "Not authorized"))).as(JSON)
   }
 
   /**
@@ -67,38 +68,32 @@ trait SecureSocial extends Controller {
    * @return
    */
   def SecuredAction[A](ajaxCall: Boolean, authorize: Option[Authorization], p: BodyParser[A])
-                      (f: SecuredRequest[A] => Result)
-                       = Action(p) {
-    implicit request => {
-
-      val result = for (
-        userId <- SecureSocial.userFromSession ;
-        user <- UserService.find(userId)
-      ) yield {
-        if ( authorize.isEmpty || authorize.get.isAuthorized(user)) {
-          f(SecuredRequest(user, request))
-        } else {
-          if ( ajaxCall ) {
-            ajaxCallNotAuthorized(request)
-          } else {
-            Redirect(RoutesHelper.notAuthorized.absoluteURL(IdentityProvider.sslEnabled))
-          }
-        }
-      }
-
-      result.getOrElse({
-        if ( Logger.isDebugEnabled ) {
+                      (f: SecuredRequest[A] => Result) = Action(p) {
+    implicit request =>
+      SecureSocial.userFromSession.fold[Result] {
+        if (Logger.isDebugEnabled) {
           Logger.debug("Anonymous user trying to access : '%s'".format(request.uri))
         }
-        if ( ajaxCall ) {
+        if (ajaxCall) {
           ajaxCallNotAuthenticated(request)
         } else {
           Redirect(RoutesHelper.login()).flashing("error" -> Messages("securesocial.loginRequired")).withSession(
-            session + (SecureSocial.OriginalUrlKey -> request.uri)
-          )
+            session + (SecureSocial.OriginalUrlKey -> request.uri))
         }
-      })
-    }
+      } {
+        userId =>
+          val result = UserService.find(userId).map {
+            case Some(user) if authorize.isEmpty || authorize.get.isAuthorized(user) =>
+              f(SecuredRequest(user, request))
+            case _ =>
+              if (ajaxCall) {
+                ajaxCallNotAuthorized(request)
+              } else {
+                Redirect(RoutesHelper.notAuthorized.absoluteURL(IdentityProvider.sslEnabled))
+              }
+          }
+          Async(result)
+      }
   }
 
   /**
@@ -124,7 +119,7 @@ trait SecureSocial extends Controller {
    */
   def SecuredAction(authorize: Authorization)
                    (f: SecuredRequest[AnyContent] => Result): Action[AnyContent] =
-    SecuredAction(false,authorize)(f)
+    SecuredAction(false, authorize)(f)
 
   /**
    * A secured action.  If there is no user in the session the request is redirected
@@ -151,7 +146,7 @@ trait SecureSocial extends Controller {
   /**
    * A request that adds the User for the current call
    */
-  case class RequestWithUser[A](user: Option[SocialUser], request: Request[A]) extends WrappedRequest(request)
+  case class RequestWithUser[A](user: Future[Option[SocialUser]], request: Request[A]) extends WrappedRequest(request)
 
   /**
    * An action that adds the current user in the request if it's available
@@ -188,7 +183,7 @@ object SecureSocial {
    * @tparam A
    * @return
    */
-  def userFromSession[A](implicit request: RequestHeader):Option[UserId] = {
+  def userFromSession[A](implicit request: RequestHeader): Option[UserId] = {
     for (
       userId <- request.session.get(SecureSocial.UserKey);
       providerId <- request.session.get(SecureSocial.ProviderKey)
@@ -205,23 +200,25 @@ object SecureSocial {
    * @tparam A
    * @return
    */
-  def currentUser[A](implicit request: RequestHeader):Option[SocialUser] = {
-    for (
-      userId <- userFromSession ;
-      user <- UserService.find(userId)
-    ) yield {
-      fillServiceInfo(user)
+  def currentUser[A](implicit request: RequestHeader): Future[Option[SocialUser]] = {
+    userFromSession.fold[Future[Option[SocialUser]]](Future(None)) {
+      userId =>
+        UserService.find(userId).map {
+          case Some(user) => Some(fillServiceInfo(user))
+          case _ => None
+        }
     }
   }
 
   def fillServiceInfo(user: SocialUser): SocialUser = {
-    if ( user.authMethod == AuthenticationMethod.OAuth1 ) {
+    if (user.authMethod == AuthenticationMethod.OAuth1) {
       // if the user is using OAuth1 make sure we're also returning
       // the right service info
-      ProviderRegistry.get(user.id.providerId).map { p =>
-        val si = p.asInstanceOf[OAuth1Provider].serviceInfo
-        val oauthInfo = user.oAuth1Info.get.copy(serviceInfo = si)
-        user.copy( oAuth1Info = Some(oauthInfo))
+      ProviderRegistry.get(user.id.providerId).map {
+        p =>
+          val si = p.asInstanceOf[OAuth1Provider].serviceInfo
+          val oauthInfo = user.oAuth1Info.get.copy(serviceInfo = si)
+          user.copy(oAuth1Info = Some(oauthInfo))
       }.get
     } else {
       user

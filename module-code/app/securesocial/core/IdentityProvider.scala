@@ -75,18 +75,16 @@ abstract class IdentityProvider(application: Application) extends Plugin {
    * @tparam A
    * @return
    */
-  def authenticate[A]()(implicit request: Request[A]): Either[Result, Future[SocialUser]] = {
-    doAuth().fold(
-      result => Left(result),
-      u => {
-        Right({
-          fillProfile(u).map { user =>
+  def authenticate[A]()(implicit request: Request[A]): Future[Either[Result, SocialUser]] = {
+    doAuth().flatMap {
+      case Left(result) => Future(Left(result))
+      case Right(u) =>
+        fillProfile(u).map {
+          user =>
             UserService.save(user)
-            user
-          }
-        })
-      }
-    )
+            Right(user)
+        }
+    }
   }
 
   /**
@@ -125,7 +123,7 @@ abstract class IdentityProvider(application: Application) extends Plugin {
    * @tparam A
    * @return Either a Result or a User
    */
-  def doAuth[A]()(implicit request: Request[A]): Either[Result, SocialUser]
+  def doAuth[A]()(implicit request: Request[A]): Future[Either[Result, SocialUser]]
 
   /**
    * Subclasses need to implement this method to populate the User object with profile

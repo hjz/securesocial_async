@@ -85,22 +85,21 @@ object ProviderController extends Controller {
       ProviderRegistry.get(provider) match {
         case Some(p) => {
           try {
-            p.authenticate().fold(
-              result => result,
-              f => Async {
-                f.map {
-                  user =>
-                    if (Logger.isDebugEnabled) {
-                      Logger.debug("User logged in : [" + user + "]")
-                    }
-                    Redirect(toUrl).withSession {
-                      session +
-                        (SecureSocial.UserKey -> user.id.id) +
-                        (SecureSocial.ProviderKey -> user.id.providerId) -
-                        SecureSocial.OriginalUrlKey
-                    }
+            val result = p.authenticate().map {
+              case Left(result) => result
+              case Right(user) => {
+                if (Logger.isDebugEnabled) {
+                  Logger.debug("User logged in : [" + user + "]")
                 }
-              })
+                Redirect(toUrl).withSession {
+                  session +
+                    (SecureSocial.UserKey -> user.id.id) +
+                    (SecureSocial.ProviderKey -> user.id.providerId) -
+                    SecureSocial.OriginalUrlKey
+                }
+              }
+            }
+            Async(result)
           } catch {
             case ex: AccessDeniedException => {
               Redirect(RoutesHelper.login()).flashing("error" -> Messages("securesocial.login.accessDenied"))
@@ -110,4 +109,5 @@ object ProviderController extends Controller {
         case _ => NotFound
       }
   }
+
 }

@@ -16,11 +16,11 @@
  */
 package service
 
+import play.api.libs.concurrent.Execution.Implicits._
 import play.api.{Logger, Application}
-import securesocial.core.{UserServicePlugin, UserId, SocialUser}
-import java.util.UUID
-import org.joda.time.DateTime
+import scala.concurrent.Future
 import securesocial.core.providers.Token
+import securesocial.core.{UserServicePlugin, UserId, SocialUser}
 
 
 /**
@@ -33,18 +33,18 @@ class InMemoryUserService(application: Application) extends UserServicePlugin(ap
   private var users = Map[String, SocialUser]()
   private var tokens = Map[String, Token]()
 
-  def find(id: UserId) = {
+  def find(id: UserId): Future[Option[SocialUser]] = {
     if ( Logger.isDebugEnabled ) {
       Logger.debug("users = %s".format(users))
     }
-    users.get(id.id + id.providerId)
+    Future(users.get(id.id + id.providerId))
   }
 
-  def findByEmailAndProvider(email: String, providerId: String): Option[SocialUser] = {
+  def findByEmailAndProvider(email: String, providerId: String): Future[Option[SocialUser]] = {
     if ( Logger.isDebugEnabled ) {
       Logger.debug("users = %s".format(users))
     }
-    users.values.find( u => u.email.map( e => e == email && u.id.providerId == providerId).getOrElse(false))
+    Future(users.values.find( u => u.email.map( e => e == email && u.id.providerId == providerId).getOrElse(false)))
   }
 
   def save(user: SocialUser) {
@@ -55,8 +55,8 @@ class InMemoryUserService(application: Application) extends UserServicePlugin(ap
     tokens += (token.uuid -> token)
   }
 
-  def findToken(token: String): Option[Token] = {
-    tokens.get(token)
+  def findToken(token: String): Future[Option[Token]] = {
+    Future(tokens.get(token))
   }
 
   def deleteToken(uuid: String) {

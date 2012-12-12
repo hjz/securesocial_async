@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -26,24 +26,23 @@ object GravatarHelper {
   val GravatarUrl = "http://www.gravatar.com/avatar/%s?d=404"
   val Md5 = "MD5"
 
-  def avatarFor(email: String): Option[String] = {
-    import scala.concurrent.duration._
-
-    hash(email).map(hash => {
-      val url = GravatarUrl.format(hash)
-      val f: Future[Response] = WS.url(url).get()
-      val p = promise[Option[String]]
-      f.onComplete {
-        case Success(response) if (response.status == 200) => p.success(Some(url))
-        case _ => p.success(None)
-      }
-      Await.result(p.future, 10 seconds)
-    }).getOrElse(None)
-  }
+  def avatarFor(email: String): Future[Option[String]] =
+    hash(email) match {
+      case Some(hash) =>
+        val url = GravatarUrl.format(hash)
+        val f = WS.url(url).get()
+        val p = promise[Option[String]]
+        f.onComplete {
+          case Success(response) if (response.status == 200) => p.success(Some(url))
+          case _ => p.success(None)
+        }
+        p.future
+      case None => Future(None)
+    }
 
   private def hash(email: String): Option[String] = {
     val s = email.trim.toLowerCase
-    if ( s.length > 0 ) {
+    if (s.length > 0) {
       val out = MessageDigest.getInstance(Md5).digest(s.getBytes)
       Some(BigInt(1, out).toString(16))
     } else {

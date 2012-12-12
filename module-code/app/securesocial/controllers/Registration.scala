@@ -70,10 +70,7 @@ object Registration extends Controller {
 
   val formWithUsername = Form[RegistrationInfo](
     mapping(
-      UserName -> nonEmptyText.verifying(Messages(UserNameAlreadyTaken), userName => {
-        val found = UserService.find(UserId(userName, providerId))
-        Await.result(found, 10 seconds).isEmpty
-      }),
+      UserName -> nonEmptyText,
       FirstName -> nonEmptyText,
       LastName -> nonEmptyText,
       (Password ->
@@ -212,22 +209,38 @@ object Registration extends Controller {
             info => {
               val id = if (UsernamePasswordProvider.withUserNameSupport) info.userName.get else t.email
               val userId = UserId(id, providerId)
-              val user = SocialUser(
-                userId,
-                info.firstName,
-                info.lastName,
-                "%s %s".format(info.firstName, info.lastName),
-                Some(t.email),
-                if (UsernamePasswordProvider.enableGravatar) GravatarHelper.avatarFor(t.email) else None,
-                AuthenticationMethod.UserPassword,
-                passwordInfo = Some(use[PasswordHasher].hash(info.password))
-              )
-              UserService.save(user)
-              UserService.deleteToken(t.uuid)
-              if (UsernamePasswordProvider.sendWelcomeEmail) {
-                Mailer.sendWelcomeEmail(user)
+              val found = UserService.find(userId)
+              val gravatarUrl = if (UsernamePasswordProvider.enableGravatar) {
+                GravatarHelper.avatarFor(t.email)
+              } else Future(None)
+
+              val result: Future[Result] = for {
+                f <- found
+                url <- gravatarUrl
+              } yield {
+                if (!f.isEmpty) { // verify if the username is already taken.
+                  val errors = form.fill(info).withError(UserName, Messages(UserNameAlreadyTaken))
+                  BadRequest(use[TemplatesPlugin].getSignUpPage(request, errors, t.uuid))
+                } else {
+                  val user = SocialUser(
+                    userId,
+                    info.firstName,
+                    info.lastName,
+                    "%s %s".format(info.firstName, info.lastName),
+                    Some(t.email),
+                    url,
+                    AuthenticationMethod.UserPassword,
+                    passwordInfo = Some(use[PasswordHasher].hash(info.password))
+                  )
+                  UserService.save(user)
+                  UserService.deleteToken(t.uuid)
+                  if (UsernamePasswordProvider.sendWelcomeEmail) {
+                    Mailer.sendWelcomeEmail(user)
+                  }
+                  Redirect(RoutesHelper.login()).flashing(Success -> Messages(SignUpDone))
+                }
               }
-              Redirect(RoutesHelper.login()).flashing(Success -> Messages(SignUpDone))
+              Async(result)
             }
           )
       })

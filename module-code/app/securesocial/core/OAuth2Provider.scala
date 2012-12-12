@@ -25,7 +25,6 @@ import play.api.mvc.{Results, Result, Request}
 import play.api.libs.concurrent.Execution.Implicits._
 import play.api.libs.ws.{Response, WS}
 import scala.concurrent._
-import scala.concurrent.duration._
 import scala.util.{Success, Failure}
 import providers.utils.RoutesHelper
 
@@ -53,7 +52,7 @@ abstract class OAuth2Provider(application: Application) extends IdentityProvider
     result.get
   }
 
-  private def getAccessToken[A](code: String)(implicit request: Request[A]): OAuth2Info = {
+  private def getAccessToken[A](code: String)(implicit request: Request[A]): Future[OAuth2Info] = {
     val params = Map(
       OAuth2Constants.ClientId -> Seq(settings.clientId),
       OAuth2Constants.ClientSecret -> Seq(settings.clientSecret),
@@ -70,7 +69,7 @@ abstract class OAuth2Provider(application: Application) extends IdentityProvider
       case Success(response) =>
         oauth2InfoPromise.success(buildInfo(response))
     }
-    Await.result(oauth2InfoPromise.future, 10 seconds)
+    oauth2InfoPromise.future
   }
 
   protected def buildInfo(response: Response): OAuth2Info = {
@@ -100,24 +99,28 @@ abstract class OAuth2Provider(application: Application) extends IdentityProvider
     request.queryString.get(OAuth2Constants.Code).flatMap(_.headOption) match {
       case Some(code) =>
         // we're being redirected back from the authorization server with the access code.
-        val user = for (
-        // check if the state we sent is equal to the one we're receiving now before continuing the flow.
-          sessionId <- request.session.get(IdentityProvider.SessionId);
-          originalState <- Cache.getAs[String](sessionId);
-          currentState <- request.queryString.get(OAuth2Constants.State).flatMap(_.headOption) if originalState == currentState
-        ) yield {
-          val accessToken = getAccessToken(code)
-          val oauth2Info = Some(
-            OAuth2Info(accessToken.accessToken, accessToken.tokenType, accessToken.expiresIn, accessToken.refreshToken)
-          )
-          SocialUser(UserId("", providerId), "", "", "", None, None, authMethod, oAuth2Info = oauth2Info)
-        }
-        if (Logger.isDebugEnabled) {
-          Logger.debug("user = " + user)
-        }
-        user match {
-          case Some(u) => Future(Right(u))
-          case _ => throw new AuthenticationException()
+        getAccessToken(code).map {
+          accessToken =>
+            for (
+            // check if the state we sent is equal to the one we're receiving now before continuing the flow.
+              sessionId <- request.session.get(IdentityProvider.SessionId);
+              originalState <- Cache.getAs[String](sessionId);
+              currentState <- request.queryString.get(OAuth2Constants.State).flatMap(_.headOption) if originalState == currentState
+            ) yield {
+              val oauth2Info = Some(
+                OAuth2Info(accessToken.accessToken, accessToken.tokenType, accessToken.expiresIn, accessToken.refreshToken)
+              )
+              SocialUser(UserId("", providerId), "", "", "", None, None, authMethod, oAuth2Info = oauth2Info)
+            }
+        }.map {
+          user =>
+            if (Logger.isDebugEnabled) {
+              Logger.debug("user = " + user)
+            }
+            user match {
+              case Some(u) => Right(u)
+              case _ => throw new AuthenticationException()
+            }
         }
       case None =>
         // There's no code in the request, this is the first step in the oauth flow

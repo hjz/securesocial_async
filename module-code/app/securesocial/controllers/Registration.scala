@@ -34,7 +34,6 @@ import securesocial.core.providers.UsernamePasswordProvider
 import securesocial.core.providers.utils._
 import securesocial.core.{AuthenticationMethod, UserService}
 import scala.concurrent._
-import scala.concurrent.duration._
 
 
 /**
@@ -116,7 +115,9 @@ object Registration extends Controller {
   val changePasswordForm = Form(
     Password ->
       tuple(
-        Password1 -> nonEmptyText,
+        Password1 -> nonEmptyText.verifying(use[PasswordValidator].errorMessage,
+          p => use[PasswordValidator].isValid(p)
+        ),
         Password2 -> nonEmptyText
       ).verifying(Messages(PasswordsDoNotMatch), passwords => passwords._1 == passwords._2)
   )
@@ -291,7 +292,9 @@ object Registration extends Controller {
             val result = UserService.findByEmailAndProvider(t.email, UsernamePasswordProvider.UsernamePassword) map {
               case Some(user) => {
                 val hashed = use[PasswordHasher].hash(p._1)
+                Logger.debug("Existing user: " + user.toString)
                 val updated = user.copy(passwordInfo = Some(hashed))
+                Logger.debug("Updated user: " + updated.toString)
                 UserService.save(updated)
                 UserService.deleteToken(token)
                 Mailer.sendPasswordChangedNotice(updated)

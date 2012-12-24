@@ -22,7 +22,7 @@ import play.api.libs.concurrent.Execution.Implicits._
 import play.api.libs.concurrent.Akka
 import scala.concurrent._
 import scala.concurrent.duration._
-import providers.Token
+import providers.{UsernamePasswordProvider, Token}
 
 /**
  * A trait that provides the means to find and save users
@@ -126,14 +126,16 @@ abstract class UserServicePlugin(application: Application) extends Plugin with U
 
     val i = application.configuration.getInt(DeleteIntervalKey).getOrElse(DefaultInterval)
 
-    cancellable = Some(
-      Akka.system.scheduler.schedule(0 seconds, i minutes) {
-        if (Logger.isDebugEnabled) {
-          Logger.debug("Calling deleteExpiredTokens()")
+    cancellable = if (UsernamePasswordProvider.enableTokenJob) {
+      Some(
+        Akka.system.scheduler.schedule(0 seconds, i minutes) {
+          if (Logger.isDebugEnabled) {
+            Logger.debug("Calling deleteExpiredTokens()")
+          }
+          deleteExpiredTokens()
         }
-        deleteExpiredTokens()
-      }
-    )
+      )
+    } else None
 
     UserService.setService(this)
     Logger.info("Registered UserService: " + this.getClass)

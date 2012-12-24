@@ -4,7 +4,7 @@ import PlayProject._
 
 object ApplicationBuild extends Build {
 
-    val appName         = "securesocial"
+    val appName         = "securesocial_async"
     val appVersion      = "2.1-SNAPSHOT"
 
     val appDependencies = Seq(

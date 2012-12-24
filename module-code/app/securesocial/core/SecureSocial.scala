@@ -47,7 +47,7 @@ trait SecureSocial extends Controller {
    * @return
    */
   private def ajaxCallNotAuthenticated[A](implicit request: Request[A]): Result = {
-    Forbidden(Json.toJson(Map("error" -> "Credentials required"))).withSession {
+    Unauthorized(Json.toJson(Map("error" -> "Credentials required"))).withSession {
       session - SecureSocial.UserKey - SecureSocial.ProviderKey
     }.as(JSON)
   }

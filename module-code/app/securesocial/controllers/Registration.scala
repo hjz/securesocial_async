@@ -188,7 +188,8 @@ object Registration extends Controller {
         case Some(t) if !t.isExpired && t.isSignUp == isSignUp =>
           f(t)
         case _ =>
-          Redirect(RoutesHelper.startSignUp()).flashing(Error -> InvalidLink)
+          val to = if (isSignUp) RoutesHelper.startSignUp() else RoutesHelper.startResetPassword()
+          Redirect(to).flashing(Error -> InvalidLink)
       }
     }
   }

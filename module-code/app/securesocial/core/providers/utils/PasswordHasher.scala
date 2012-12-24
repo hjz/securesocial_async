@@ -43,6 +43,9 @@ trait PasswordHasher extends Plugin {
   def matches(passwordInfo: PasswordInfo, suppliedPassword: String): Boolean
 }
 
+object PasswordHasher {
+  val BCryptHasher = "bcrypt"
+}
 /**
  * The default password hasher based on BCrypt.
  */

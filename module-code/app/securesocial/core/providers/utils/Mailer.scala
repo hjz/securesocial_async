@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -41,10 +41,9 @@ object Mailer {
   def sendAlreadyRegisteredEmail(user: SocialUser)(implicit request: RequestHeader) {
     val html = use[TemplatesPlugin].getAlreadyRegisteredEmail(user)
     sendEmail(Messages(AlreadyRegisteredSubject), user.email.get, html)
-
   }
 
-  def sendSignUpEmail(to: String, token: String)(implicit request: RequestHeader)  {
+  def sendSignUpEmail(to: String, token: String)(implicit request: RequestHeader) {
     val html = use[TemplatesPlugin].getSignUpEmail(token)
     sendEmail(Messages(SignUpEmailSubject), to, html)
   }
@@ -52,7 +51,6 @@ object Mailer {
   def sendWelcomeEmail(user: SocialUser)(implicit request: RequestHeader) {
     val html = use[TemplatesPlugin].getWelcomeEmail(user)
     sendEmail(Messages(WelcomeEmailSubject), user.email.get, html)
-
   }
 
   def sendPasswordResetEmail(user: SocialUser, token: String)(implicit request: RequestHeader) {
@@ -76,9 +74,7 @@ object Mailer {
     import play.api.libs.concurrent.Execution.Implicits._
     import scala.language.postfixOps
 
-
-
-    if ( Logger.isDebugEnabled ) {
+    if (Logger.isDebugEnabled) {
       Logger.debug("Sending email to %s".format(recipient))
       Logger.debug("mail = [%s]".format(body))
     }

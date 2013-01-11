@@ -47,8 +47,6 @@ object RoutesHelper {
   def login() = loginPageMethods.login()
   def logout() = loginPageMethods.logout()
 
-
-  ///
   val rr = Play.application.classloader.loadClass("securesocial.controllers.ReverseRegistration")
   val registrationMethods = rr.newInstance().asInstanceOf[{
     def handleStartResetPassword(): Call
@@ -70,7 +68,6 @@ object RoutesHelper {
   def signUp(token:String) = registrationMethods.signUp(token)
   def handleResetPassword(token:String) = registrationMethods.handleResetPassword(token)
 
-  ////
   var passChange = Play.application.classloader.loadClass("securesocial.controllers.ReversePasswordChange")
   val passwordChangeMethods = passChange.newInstance().asInstanceOf[{
     def page(): Call
@@ -80,7 +77,6 @@ object RoutesHelper {
   def changePasswordPage() = passwordChangeMethods.page()
   def handlePasswordChange() = passwordChangeMethods.handlePasswordChange()
 
-  //
   val assets = Play.application.classloader.loadClass("controllers.ReverseAssets")
   val assetsControllerMethods = assets.newInstance().asInstanceOf[{
     def at(file: String): Call

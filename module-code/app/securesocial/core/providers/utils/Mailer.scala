@@ -74,6 +74,8 @@ object Mailer {
     import com.typesafe.plugin._
     import scala.concurrent.duration._
     import play.api.libs.concurrent.Execution.Implicits._
+    import scala.language.postfixOps
+
 
 
     if ( Logger.isDebugEnabled ) {

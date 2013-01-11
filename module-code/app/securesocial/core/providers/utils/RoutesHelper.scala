@@ -23,6 +23,8 @@ import play.Play
  *
  */
 object RoutesHelper {
+  import scala.language.reflectiveCalls
+
   // ProviderController
   val pc = Play.application.classloader.loadClass("securesocial.controllers.ReverseProviderController")
   val providerControllerMethods = pc.newInstance().asInstanceOf[{

@@ -64,7 +64,11 @@ The following properties can be configured:
 
 - `tokenDeleteInterval`: This property defines how often the `deleteExpiredTokens()` method in `UserService` gets called. This value is expressed in **minutes** and is set to 5 by default.
 
-- `minimumPasswordLength`: Defines the minimum password length the user can enter. Defaults to 6 if not specified. 
+- `minimumPasswordLength`: Defines the minimum password length the user can enter. Defaults to 6 if not specified.
+
+- `enableTokenJob`: Enable/disables the background job used to delete sign up and reset password tokens.
+
+- `hasher`: Specifies the current password hasher. 
 
 For example:
 
@@ -76,6 +80,8 @@ For example:
 		tokenDuration=60
 		tokenDeleteInterval=5
 		minimumPasswordLength=8
+		enableTokenJob=true
+		hasher=bcrypt
 	}
 
 ### OAuth based Providers	

@@ -123,6 +123,7 @@ abstract class UserServicePlugin(application: Application) extends Plugin with U
    */
   override def onStart() {
     import play.api.Play.current
+    import scala.language.postfixOps
 
     val i = application.configuration.getInt(DeleteIntervalKey).getOrElse(DefaultInterval)
 

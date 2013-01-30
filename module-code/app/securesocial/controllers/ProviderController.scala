@@ -93,7 +93,7 @@ object ProviderController extends Controller {
                 }
                 Redirect(toUrl).withSession {
                   session +
-                    (SecureSocial.UserKey -> user.id.id) +
+                    (SecureSocial.UserKey -> user.id.userId) +
                     (SecureSocial.ProviderKey -> user.id.providerId) -
                     SecureSocial.OriginalUrlKey
                 }

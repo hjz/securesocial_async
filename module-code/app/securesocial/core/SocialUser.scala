@@ -30,10 +30,10 @@ case class SocialUser(id: UserId, firstName: String, lastName: String, fullName:
 /**
  * The ID of a Social user
  *
- * @param id the id on the provider the user came from (eg: twitter, facebook)
+ * @param userId the id on the provider the user came from (eg: twitter, facebook)
  * @param providerId the provider the used to sign in
  */
-case class UserId(id: String, providerId: String)
+case class UserId(userId: String, providerId: String)
 
 /**
  * The OAuth 1 details

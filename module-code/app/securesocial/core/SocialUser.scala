@@ -38,11 +38,10 @@ case class UserId(id: String, providerId: String)
 /**
  * The OAuth 1 details
  *
- * @param serviceInfo
  * @param token
  * @param secret
  */
-case class OAuth1Info(serviceInfo: ServiceInfo, token: String, secret: String)
+case class OAuth1Info(token: String, secret: String)
 
 case class OAuth2Info(accessToken: String, tokenType: Option[String] = None,
                       expiresIn: Option[Int] = None, refreshToken: Option[String] = None)

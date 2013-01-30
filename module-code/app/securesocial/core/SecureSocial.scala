@@ -23,6 +23,7 @@ import play.api.Logger
 import play.api.libs.concurrent.Execution.Implicits._
 import play.api.libs.json.Json
 import scala.concurrent.Future
+import play.api.libs.oauth.ServiceInfo
 
 
 /**
@@ -203,25 +204,15 @@ object SecureSocial {
   def currentUser[A](implicit request: RequestHeader): Future[Option[SocialUser]] = {
     userFromSession.fold[Future[Option[SocialUser]]](Future(None)) {
       userId =>
-        UserService.find(userId).map {
-          case Some(user) => Some(fillServiceInfo(user))
-          case _ => None
-        }
+        UserService.find(userId)
     }
   }
 
-  def fillServiceInfo(user: SocialUser): SocialUser = {
-    if (user.authMethod == AuthenticationMethod.OAuth1) {
-      // if the user is using OAuth1 make sure we're also returning
-      // the right service info
-      ProviderRegistry.get(user.id.providerId).map {
-        p =>
-          val si = p.asInstanceOf[OAuth1Provider].serviceInfo
-          val oauthInfo = user.oAuth1Info.get.copy(serviceInfo = si)
-          user.copy(oAuth1Info = Some(oauthInfo))
-      }.get
-    } else {
-      user
+  def serviceInfoFor(user: SocialUser): Option[ServiceInfo] = {
+    ProviderRegistry.get(user.id.providerId) match {
+      case Some(p: OAuth1Provider) if p.authMethod == AuthenticationMethod.OAuth1 =>
+        Some(p.serviceInfo)
+      case _ => None
     }
   }
 }

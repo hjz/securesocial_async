@@ -29,7 +29,7 @@ import scala.concurrent.Future
  *
  */
 abstract class IdentityProvider(application: Application) extends Plugin {
-  val SecureSocial = "securesocial."
+  val SecureSocialKey = "securesocial."
   val Dot = "."
 
 
@@ -99,7 +99,7 @@ abstract class IdentityProvider(application: Application) extends Plugin {
    *
    * @return
    */
-  def propertyKey = SecureSocial + providerId + Dot
+  def propertyKey = SecureSocialKey + providerId + Dot
 
   /**
    * Reads a property from the application.conf

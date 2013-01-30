@@ -28,7 +28,7 @@ import scala.concurrent._
 import securesocial.controllers.TemplatesPlugin
 import securesocial.core._
 import utils.PasswordHasher
-import securesocial.core.UserId
+import securesocial.core.Id
 import securesocial.core.SocialUser
 import scala.Some
 
@@ -48,7 +48,7 @@ class UsernamePasswordProvider(application: Application) extends IdentityProvide
     form.fold(
       errors => Future(Left(badRequest(errors, request))),
       credentials => {
-        val userId = UserId(credentials._1, providerId)
+        val userId = Id(credentials._1, providerId)
         UserService.find(userId).map {
           case Some(user) if user.passwordInfo.isDefined &&
             use[PasswordHasher].matches(user.passwordInfo.get, credentials._2) =>

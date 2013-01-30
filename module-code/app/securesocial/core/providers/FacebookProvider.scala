@@ -62,7 +62,7 @@ class FacebookProvider(application: Application) extends OAuth2Provider(applicat
             throw new AuthenticationException()
           case _ =>
             socialUserPromise.success {
-              val id = (me \ Id).as[String]
+              val userId = (me \ UserId).as[String]
               val name = (me \ Name).as[String]
               val firstName = (me \ FirstName).as[String]
               val lastName = (me \ LastName).as[String]
@@ -70,7 +70,7 @@ class FacebookProvider(application: Application) extends OAuth2Provider(applicat
               val avatarUrl = (picture \ Data \ Url).asOpt[String]
               val email = (me \ Email).as[String]
               user.copy(
-                id = UserId(id.toString, providerId),
+                id = Id(userId, providerId),
                 firstName = firstName,
                 lastName = lastName,
                 fullName = name,
@@ -90,7 +90,7 @@ object FacebookProvider {
   val Error = "error"
   val Message = "message"
   val Type = "type"
-  val Id = "id"
+  val UserId = "id"
   val FirstName = "first_name"
   val LastName = "last_name"
   val Name = "name"

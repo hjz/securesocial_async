@@ -37,7 +37,7 @@ trait UserService {
    * @param id the user id
    * @return an optional user
    */
-  def find(id: UserId): Future[Option[SocialUser]]
+  def find(id: Id): Future[Option[SocialUser]]
 
   /**
    * Finds a Social user by email and provider id.
@@ -153,7 +153,7 @@ object UserService {
     delegate = Some(service)
   }
 
-  def find(id: UserId): Future[Option[SocialUser]] = {
+  def find(id: Id): Future[Option[SocialUser]] = {
     delegate.fold[Future[Option[SocialUser]]] {
       notInitialized()
       Future(None)

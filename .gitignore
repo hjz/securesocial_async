@@ -6,6 +6,9 @@
 # Files related to Play build or usage
 target
 logs
+module-code/project/
+samples/scala/demo/conf/
+samples/scala/demo/project/
 
 # IDE and editors
 *~

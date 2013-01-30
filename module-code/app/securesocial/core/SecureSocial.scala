@@ -178,18 +178,18 @@ object SecureSocial {
   val OriginalUrlKey = "securesocial.originalUrl"
 
   /**
-   * Build a UserId object from the session data
+   * Build a Identity object from the session data
    *
    * @param request
    * @tparam A
    * @return
    */
-  def userFromSession[A](implicit request: RequestHeader): Option[UserId] = {
+  def userFromSession[A](implicit request: RequestHeader): Option[Id] = {
     for (
       userId <- request.session.get(SecureSocial.UserKey);
       providerId <- request.session.get(SecureSocial.ProviderKey)
     ) yield {
-      UserId(userId, providerId)
+      Id(userId, providerId)
     }
   }
 

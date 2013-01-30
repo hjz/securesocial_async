@@ -52,14 +52,14 @@ class GoogleProvider(application: Application) extends OAuth2Provider(applicatio
             throw new AuthenticationException()
           case _ =>
             socialUserPromise.success {
-              val id = (me \ Id).as[String]
+              val userId = (me \ UserId).as[String]
               val firstName = (me \ GivenName).as[String]
               val lastName = (me \ FamilyName).as[String]
               val fullName = (me \ Name).as[String]
               val avatarUrl = (me \ Picture).asOpt[String]
               val email = (me \ Email).as[String]
               user.copy(
-                id = UserId(id.toString, providerId),
+                id = Id(userId, providerId),
                 firstName = firstName,
                 lastName = lastName,
                 fullName = fullName,
@@ -80,7 +80,7 @@ object GoogleProvider {
   val Error = "error"
   val Message = "message"
   val Type = "type"
-  val Id = "id"
+  val UserId = "id"
   val Name = "name"
   val GivenName = "given_name"
   val FamilyName = "family_name"

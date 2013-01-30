@@ -58,13 +58,13 @@ class LinkedInProvider(application: Application) extends OAuth1Provider(applicat
           }
           case _ => {
             socialUserPromise.success {
-              val id = (me \ Id).as[String]
+              val userId = (me \ UserId).as[String]
               val firstName = (me \ FirstName).asOpt[String].getOrElse("")
               val lastName = (me \ LastName).asOpt[String].getOrElse("")
               val fullName = (me \ FormattedName).asOpt[String].getOrElse("")
               val avatarUrl = (me \ PictureUrl).asOpt[String]
               user.copy(
-                id = UserId(id, providerId),
+                id = Id(userId, providerId),
                 firstName = firstName,
                 lastName = lastName,
                 fullName = fullName,
@@ -86,7 +86,7 @@ object LinkedInProvider {
   val Message = "message"
   val RequestId = "requestId"
   val Timestamp = "timestamp"
-  val Id = "id"
+  val UserId = "id"
   val FirstName = "firstName"
   val LastName = "lastName"
   val FormattedName = "formattedName"

@@ -21,7 +21,7 @@ import play.api.libs.oauth.ServiceInfo
 /**
  * A User that logs in using one of the IdentityProviders
  */
-case class SocialUser(id: UserId, firstName: String, lastName: String, fullName: String, email: Option[String],
+case class SocialUser(id: Id, firstName: String, lastName: String, fullName: String, email: Option[String],
                       avatarUrl: Option[String], authMethod: AuthenticationMethod,
                       oAuth1Info: Option[OAuth1Info] = None,
                       oAuth2Info: Option[OAuth2Info] = None,
@@ -33,7 +33,7 @@ case class SocialUser(id: UserId, firstName: String, lastName: String, fullName:
  * @param userId the id on the provider the user came from (eg: twitter, facebook)
  * @param providerId the provider the used to sign in
  */
-case class UserId(userId: String, providerId: String)
+case class Id(userId: String, providerId: String)
 
 /**
  * The OAuth 1 details

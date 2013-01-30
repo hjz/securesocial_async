@@ -110,7 +110,7 @@ abstract class OAuth2Provider(application: Application) extends IdentityProvider
               val oauth2Info = Some(
                 OAuth2Info(accessToken.accessToken, accessToken.tokenType, accessToken.expiresIn, accessToken.refreshToken)
               )
-              SocialUser(UserId("", providerId), "", "", "", None, None, authMethod, oAuth2Info = oauth2Info)
+              SocialUser(Id("", providerId), "", "", "", None, None, authMethod, oAuth2Info = oauth2Info)
             }
         }.map {
           user =>

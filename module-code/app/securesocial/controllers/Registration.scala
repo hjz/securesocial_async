@@ -28,7 +28,7 @@ import play.api.libs.concurrent.Execution.Implicits._
 import play.api.mvc.{Result, Action, Controller}
 import play.api.{Play, Logger}
 import securesocial.core.SocialUser
-import securesocial.core.UserId
+import securesocial.core.Id
 import securesocial.core.providers.Token
 import securesocial.core.providers.UsernamePasswordProvider
 import securesocial.core.providers.utils._
@@ -210,7 +210,7 @@ object Registration extends Controller {
             },
             info => {
               val id = if (UsernamePasswordProvider.withUserNameSupport) info.userName.get else t.email
-              val userId = UserId(id, providerId)
+              val userId = Id(id, providerId)
               val found = UserService.find(userId)
               val gravatarUrl = if (UsernamePasswordProvider.enableGravatar) {
                 GravatarHelper.avatarFor(t.email)

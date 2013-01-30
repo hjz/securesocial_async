@@ -64,12 +64,12 @@ class GitHubProvider(application: Application) extends OAuth2Provider(applicatio
           }
           case _ =>
             socialUserPromise.success {
-              val id = (me \ Id).as[Int]
+              val userId = (me \ UserId).as[Int]
               val displayName = (me \ Name).asOpt[String].getOrElse("")
               val avatarUrl = (me \ AvatarUrl).asOpt[String]
               val email = (me \ Email).asOpt[String].filter(!_.isEmpty)
               user.copy(
-                id = UserId(id.toString, providerId),
+                id = Id(userId.toString, providerId),
                 fullName = displayName,
                 avatarUrl = avatarUrl,
                 email = email
@@ -88,7 +88,7 @@ object GitHubProvider {
   val AccessToken = "access_token"
   val TokenType = "token_type"
   val Message = "message"
-  val Id = "id"
+  val UserId = "id"
   val Name = "name"
   val AvatarUrl = "avatar_url"
   val Email = "email"

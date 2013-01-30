@@ -47,10 +47,10 @@ class TwitterProvider(application: Application) extends OAuth1Provider(applicati
       case Success(response) =>
         socialUserPromise.success {
           val me = response.json
-          val id = (me \ Id).as[Int]
+          val userId = (me \ UserId).as[Int]
           val name = (me \ Name).as[String]
           val profileImage = (me \ ProfileImage).asOpt[String]
-          user.copy(id = UserId(id.toString, providerId), fullName = name, avatarUrl = profileImage)
+          user.copy(id = Id(userId.toString, providerId), fullName = name, avatarUrl = profileImage)
         }
     }
     socialUserPromise.future
@@ -60,7 +60,7 @@ class TwitterProvider(application: Application) extends OAuth1Provider(applicati
 object TwitterProvider {
   val Twitter = "twitter"
   val VerifyCredentials = "https://api.twitter.com/1.1/account/verify_credentials.json"
-  val Id = "id"
+  val UserId = "id"
   val Name = "name"
   val ProfileImage = "profile_image_url_https"
 }

@@ -52,8 +52,8 @@ object ProviderController extends Controller {
    * @return
    */
   def toUrl(implicit request: RequestHeader) = session.get(SecureSocial.OriginalUrlKey).getOrElse(
-    Play.configuration.getString(onLoginGoTo).getOrElse(
-      Play.configuration.getString(ApplicationContext).getOrElse(Root)
+    Play.current.configuration.getString(onLoginGoTo).getOrElse(
+      Play.current.configuration.getString(ApplicationContext).getOrElse(Root)
     )
   )
 

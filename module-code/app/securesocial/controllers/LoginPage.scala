@@ -16,12 +16,11 @@
  */
 package securesocial.controllers
 
+import play.api.Play
 import play.api.mvc.{Action, Controller}
 import securesocial.core._
-import play.api.Play
-import Play.current
-import providers.UsernamePasswordProvider
-import providers.utils.RoutesHelper
+import securesocial.core.providers.UsernamePasswordProvider
+import securesocial.core.providers.utils.RoutesHelper
 
 
 /**
@@ -39,8 +38,8 @@ object LoginPage extends Controller
    * @return
    */
   def login = Action { implicit request =>
-    import com.typesafe.plugin._
     import Play.current
+    import com.typesafe.plugin._
     Ok(use[TemplatesPlugin].getLoginPage(request, UsernamePasswordProvider.loginForm))
   }
 
@@ -51,7 +50,7 @@ object LoginPage extends Controller
    * @return
    */
   def logout = Action { implicit request =>
-    val to = Play.configuration.getString(onLogoutGoTo).getOrElse(RoutesHelper.login().absoluteURL(IdentityProvider.sslEnabled))
+    val to = Play.current.configuration.getString(onLogoutGoTo).getOrElse(RoutesHelper.login().absoluteURL(IdentityProvider.sslEnabled))
     Redirect(to).withSession(session - SecureSocial.UserKey - SecureSocial.ProviderKey)
   }
 }
